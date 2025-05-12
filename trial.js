@@ -74,62 +74,57 @@ const LearnerSubmissions = [
         }
     }
 ];
-//part 1:get unique id
-let learners = []
-LearnerSubmissions.forEach(learner => {
-    let newArray = learner.learner_id
 
-    if (learners.indexOf(newArray) === -1) {
-        learners.push(newArray)
-    }
-
-})
-let obj = learners.map(learner => {
-    return { id: learner }
-})
-//console.log(learners)
-console.log(obj)
-
-//part 3 get assignment  and find grade and get each student score
-
-let obj2 = learners.map(learner => {
-    let results = LearnerSubmissions.filter(student => {
-        return student.learner_id === learner
+const getUniqueLearnerIds = (submissions) => {
+    let learnerIds = []
+    submissions.forEach(learner => {
+        let id = learner.learner_id;
+        if (learnerIds.indexOf(id) === -1) learnerIds.push(id);
     })
 
-    let scores = {};
-    results.forEach(res => {
-        return scores[res.assignment_id] = res.submission.score;
+    return learnerIds;
+}
+
+const getScoresAndAvg = (learnerId, submissions, groups) => {
+    const assignments = submissions.filter(submission => submission.learner_id === learnerId);
+    let scores = {}
+    let totalScore = 0;
+    let totalPointsPossible = 0;
+    assignments.forEach(assignment => {
+        const id = assignment.assignment_id;
+        const assignmentGroup = groups.assignments.filter(group => group.id === id);
+        const pointsPossible = assignmentGroup[0].points_possible;
+        const dueDate = new Date(assignmentGroup[0].due_at);
+        const submittedDate = new Date(assignment.submission.submitted_at);
+        let score = assignment.submission.score;
+        if (submittedDate > dueDate) {
+            score = score - 10;
+        }
+
+        totalScore = totalScore + score;
+        totalPointsPossible = totalPointsPossible + pointsPossible;
+
+        scores[id] = Math.floor((score / pointsPossible) * 100) / 100;
     })
 
-    return { id: learner, ...scores }
-})
-console.log(obj2)
+    scores.avg = Math.floor((totalScore / totalPointsPossible) * 100) / 100;
 
-// part 4
+    return scores;
+}
 
-let obj3 = learners.map(learner => {
-    let results = LearnerSubmissions.filter(student => {
-        return student.learner_id === learner
+const getLearnerData = (CourseInfo, AssignmentGroup, LearnerSubmissions) => {
+    const uniqueIds = getUniqueLearnerIds(LearnerSubmissions);
+    const learnerData = uniqueIds.map(learner_id => {
+        const scoresAndAvg = getScoresAndAvg(learner_id, LearnerSubmissions, AssignmentGroup);
+        return { id: learner_id, ...scoresAndAvg }
     })
 
-    let scores = {};
-    //let totalScore = 0;
-    //let totalPointPossible = 0;
-    results.forEach(res => {
-        const res01 = AssignmentGroup.assignments.filter(assmt => assmt.id === res.assignment_id);
-        const points_possible = res01[0].points_possible;
+    return learnerData;
+}
 
-         //totalScore = totalScore + res.submission.score;
-         //totalPointPossible = totalPointPossible + points_possible
+const results = getLearnerData(CourseInfo, AssignmentGroup, LearnerSubmissions);
 
-        return scores[res.assignment_id] = res.submission.score / points_possible;
-    })
-
-    return { id: learner, ...scores }
-    //return { id: learner, ...scores, avg: totalScore / totalPointPossible }
-})
-console.log(obj3)
+console.log(results);
 
 
 
